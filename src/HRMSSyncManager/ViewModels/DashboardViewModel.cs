@@ -39,6 +39,11 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
     [ObservableProperty] private string _sqlUsername = string.Empty;
     [ObservableProperty] private string _sqlPassword = string.Empty;
     [ObservableProperty] private int _batchSize = 100;
+    [ObservableProperty] private bool _isServiceNotInstalled;
+    [ObservableProperty] private bool _isServiceRunning;
+    [ObservableProperty] private bool _showStartService;
+    [ObservableProperty] private bool _showPauseService;
+    [ObservableProperty] private bool _showRestartService;
 
     public DashboardViewModel(
         IAgentConfigurationStore configStore,
@@ -61,6 +66,8 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
         LoadConfiguration();
         RefreshStatus();
     }
+
+    public void ReloadFromStore() => LoadConfiguration();
 
     private void LoadConfiguration()
     {
@@ -99,20 +106,46 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
         SyncIntervalSeconds = health.SyncIntervalSeconds;
         Database = health.Database;
         SqlServer = health.SqlServer;
+        IsServiceNotInstalled = health.ServiceStatus == "Not Installed";
+        IsServiceRunning = health.ServiceStatus.Equals("Running", StringComparison.OrdinalIgnoreCase);
+        ShowStartService = !IsServiceNotInstalled && !IsServiceRunning;
+        ShowPauseService = IsServiceRunning;
+        ShowRestartService = IsServiceRunning;
 
-        if (!string.IsNullOrWhiteSpace(health.LastError))
+        if (IsServiceNotInstalled)
+            StatusMessage = "Background sync service is not installed yet. Click \"Install Service\" above.";
+        else if (!string.IsNullOrWhiteSpace(health.LastError))
             StatusMessage = health.LastError;
+        else if (IsServiceRunning)
+            StatusMessage = "Background sync is running.";
+        else
+            StatusMessage = "Service is paused. Click \"Start Service\" to resume sync.";
+    }
+
+    [RelayCommand]
+    private async Task InstallServiceAsync()
+    {
+        var serviceExe = Environment.ProcessPath
+            ?? Path.Combine(AppContext.BaseDirectory, "HRMSAgent.exe");
+
+        await RunServiceAction(async () =>
+        {
+            if (!_serviceManager.IsInstalled())
+                await _serviceManager.InstallAsync(serviceExe);
+
+            await _serviceManager.StartAsync();
+        }, "Service is installed and running.");
     }
 
     [RelayCommand]
     private async Task StartServiceAsync() => await RunServiceAction(
         () => _serviceManager.StartAsync(),
-        "Service started.");
+        "Service started. Sync resumed.");
 
     [RelayCommand]
-    private async Task StopServiceAsync() => await RunServiceAction(
+    private async Task PauseServiceAsync() => await RunServiceAction(
         () => _serviceManager.StopAsync(),
-        "Service stopped.");
+        "Service paused. Sync stopped.");
 
     [RelayCommand]
     private async Task RestartServiceAsync() => await RunServiceAction(
@@ -156,6 +189,18 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private async Task TestApiConnectionAsync()
     {
+        if (string.IsNullOrWhiteSpace(ApiUrl) || string.IsNullOrWhiteSpace(ApiKey))
+        {
+            StatusMessage = "Enter API sync URL and API Key first.";
+            return;
+        }
+
+        if (!ApiUrlHelper.TryValidateSyncEndpoint(ApiUrl, out var apiError))
+        {
+            StatusMessage = apiError!;
+            return;
+        }
+
         IsBusy = true;
         StatusMessage = "Testing API connection...";
 
@@ -184,8 +229,15 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
     {
         try
         {
+            if (!TryValidateConfiguration(out var error))
+            {
+                StatusMessage = error!;
+                return;
+            }
+
             SaveConfigurationInternal();
             StatusMessage = "Configuration saved.";
+            ReloadFromStore();
             RefreshStatus();
         }
         catch (Exception ex)
@@ -197,19 +249,66 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
 
     private void SaveConfigurationInternal()
     {
-        _configStore.Save(new AgentConfiguration
+        var config = _configStore.Exists()
+            ? _configStore.Load()
+            : new AgentConfiguration();
+
+        if (!string.IsNullOrWhiteSpace(CompanyName))
+            config.CompanyName = CompanyName.Trim();
+
+        if (!string.IsNullOrWhiteSpace(CompanyCode))
+            config.CompanyCode = CompanyCode.Trim().ToUpperInvariant();
+
+        if (!string.IsNullOrWhiteSpace(ApiUrl))
+            config.ApiUrl = ApiUrlHelper.ResolveSyncEndpoint(ApiUrl);
+
+        if (!string.IsNullOrWhiteSpace(ApiKey))
+            config.ApiKey = ApiKey.Trim();
+
+        config.SqlServer = SqlServer.Trim();
+        config.Database = Database.Trim();
+        config.SqlUsername = SqlUsername.Trim();
+
+        if (!string.IsNullOrEmpty(SqlPassword))
+            config.SqlPassword = SqlPassword;
+
+        config.SyncIntervalSeconds = SyncIntervalSeconds;
+        config.BatchSize = BatchSize;
+
+        _configStore.Save(config);
+    }
+
+    private bool TryValidateConfiguration(out string? error)
+    {
+        if (string.IsNullOrWhiteSpace(CompanyName) || string.IsNullOrWhiteSpace(CompanyCode))
         {
-            CompanyName = CompanyName.Trim(),
-            CompanyCode = CompanyCode.Trim().ToUpperInvariant(),
-            ApiUrl = ApiUrl.Trim(),
-            ApiKey = ApiKey.Trim(),
-            SqlServer = SqlServer.Trim(),
-            Database = Database.Trim(),
-            SqlUsername = SqlUsername.Trim(),
-            SqlPassword = SqlPassword,
-            SyncIntervalSeconds = SyncIntervalSeconds,
-            BatchSize = BatchSize
-        });
+            error = "Company Name and Company Code are required.";
+            return false;
+        }
+
+        if (string.IsNullOrWhiteSpace(ApiUrl) || string.IsNullOrWhiteSpace(ApiKey))
+        {
+            error = "API sync URL and API Key are required.";
+            return false;
+        }
+
+        if (!ApiUrlHelper.TryValidateSyncEndpoint(ApiUrl, out error))
+            return false;
+
+        if (string.IsNullOrWhiteSpace(SqlServer) || string.IsNullOrWhiteSpace(Database))
+        {
+            error = "SQL Server and Database are required.";
+            return false;
+        }
+
+        if (SyncIntervalSeconds < 5 || BatchSize < 1)
+        {
+            error = "Sync interval must be at least 5 seconds and batch size at least 1.";
+            return false;
+        }
+
+        error = null;
+        return true;
     }
 
     private async Task RunServiceAction(Func<Task> action, string successMessage)

@@ -6,6 +6,7 @@ public class AgentConfiguration
 {
     public string CompanyName { get; set; } = string.Empty;
     public string CompanyCode { get; set; } = string.Empty;
+    /// <summary>Full POST URL for attendance sync, including endpoint path.</summary>
     public string ApiUrl { get; set; } = string.Empty;
     public string ApiKey { get; set; } = string.Empty;
     public string SqlServer { get; set; } = string.Empty;

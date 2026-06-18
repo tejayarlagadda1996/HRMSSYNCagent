@@ -1,0 +1,13 @@
+{
+  "name": "mock-hrms-api",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Dummy HRMS API for testing the attendance sync agent",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.21.2"
+  }
+}

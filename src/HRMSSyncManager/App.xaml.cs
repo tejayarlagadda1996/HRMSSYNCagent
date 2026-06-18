@@ -13,6 +13,8 @@ public partial class App : Application
 
     private void OnStartup(object sender, StartupEventArgs e)
     {
+        HRMSAgent.Core.Constants.AgentPaths.EnsureDirectoriesExist();
+
         var services = new ServiceCollection();
         ConfigureServices(services);
         _serviceProvider = services.BuildServiceProvider();

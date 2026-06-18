@@ -53,3 +53,35 @@ public class InverseBoolConverter : IValueConverter
     public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture) =>
         value is true ? false : true;
 }
+
+public class HealthLevelToTextConverter : IValueConverter
+{
+    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture) =>
+        value is HealthLevel level ? level switch
+        {
+            HealthLevel.Healthy => "Healthy",
+            HealthLevel.Warning => "Warning",
+            HealthLevel.Error => "Error",
+            _ => "Unknown"
+        } : "Unknown";
+
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture) =>
+        throw new NotSupportedException();
+}
+
+public class StatusMessageToBrushConverter : IValueConverter
+{
+    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        var message = value as string ?? string.Empty;
+        var isError = message.Contains("error", StringComparison.OrdinalIgnoreCase)
+            || message.Contains("failed", StringComparison.OrdinalIgnoreCase)
+            || message.Contains("denied", StringComparison.OrdinalIgnoreCase);
+
+        var color = isError ? Color.FromRgb(220, 38, 38) : Color.FromRgb(100, 116, 139);
+        return new SolidColorBrush(color);
+    }
+
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture) =>
+        throw new NotSupportedException();
+}

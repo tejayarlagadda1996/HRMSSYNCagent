@@ -1,11 +1,9 @@
 using System.Collections.ObjectModel;
-using System.Diagnostics;
 using System.IO;
 using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using HRMSAgent.Core.Configuration;
-using HRMSAgent.Core.Constants;
 using HRMSAgent.Core.Models;
 using HRMSAgent.Core.Services;
 
@@ -51,7 +49,7 @@ public partial class SetupWizardViewModel : ObservableObject
         _serviceManager = serviceManager;
         _mainViewModel = mainViewModel;
 
-        DetectSqlInstances();
+        _ = DetectSqlInstancesAsync();
     }
 
     [RelayCommand]
@@ -72,14 +70,55 @@ public partial class SetupWizardViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void DetectSqlInstances()
+    private async Task DetectSqlInstancesAsync()
     {
-        SqlInstances.Clear();
-        foreach (var instance in _sqlDetector.DetectInstances())
-            SqlInstances.Add(instance);
+        IsBusy = true;
+        StatusMessage = "Detecting SQL instances...";
 
-        if (SqlInstances.Count > 0 && string.IsNullOrWhiteSpace(SqlServer))
-            SqlServer = SqlInstances[0];
+        try
+        {
+            SqlInstances.Clear();
+            var candidates = _sqlDetector.DetectInstances();
+            var database = Database.Trim();
+            var matched = new List<string>();
+
+            if (!string.IsNullOrWhiteSpace(database))
+            {
+                foreach (var instance in candidates)
+                {
+                    try
+                    {
+                        if (await _sqlTester.TestConnectionAsync(instance, database, SqlUsername, SqlPassword))
+                            matched.Add(instance);
+                    }
+                    catch
+                    {
+                        // Instance exists but does not host this database or is unreachable.
+                    }
+                }
+            }
+
+            var toShow = matched.Count > 0 ? matched : candidates;
+            foreach (var instance in toShow)
+                SqlInstances.Add(instance);
+
+            if (SqlInstances.Count > 0)
+            {
+                if (string.IsNullOrWhiteSpace(SqlServer)
+                    || !SqlInstances.Any(i => i.Equals(SqlServer, StringComparison.OrdinalIgnoreCase)))
+                    SqlServer = SqlInstances[0];
+            }
+
+            StatusMessage = matched.Count > 0
+                ? $"Found {matched.Count} instance(s) with database '{database}'."
+                : candidates.Count > 0
+                    ? $"Found {candidates.Count} SQL instance(s). None have database '{database}'."
+                    : "No SQL instances found.";
+        }
+        finally
+        {
+            IsBusy = false;
+        }
     }
 
     [RelayCommand]
@@ -87,7 +126,13 @@ public partial class SetupWizardViewModel : ObservableObject
     {
         if (string.IsNullOrWhiteSpace(ApiUrl) || string.IsNullOrWhiteSpace(ApiKey))
         {
-            StatusMessage = "Enter API URL and API Key first.";
+            StatusMessage = "Enter API sync URL and API Key first.";
+            return;
+        }
+
+        if (!ApiUrlHelper.TryValidateSyncEndpoint(ApiUrl, out var apiError))
+        {
+            StatusMessage = apiError!;
             return;
         }
 
@@ -142,7 +187,7 @@ public partial class SetupWizardViewModel : ObservableObject
     [RelayCommand]
     private async Task FinishAsync()
     {
-        if (!ValidateCurrentStep())
+        if (!ValidateAllSteps())
             return;
 
         IsBusy = true;
@@ -152,21 +197,12 @@ public partial class SetupWizardViewModel : ObservableObject
         {
             _configStore.Save(BuildConfiguration());
 
-            var serviceExe = Path.Combine(
-                AppContext.BaseDirectory,
-                "HRMSSyncService.exe");
-
-            if (!File.Exists(serviceExe))
-            {
-                serviceExe = Path.Combine(
-                    AppContext.BaseDirectory,
-                    "service",
-                    "HRMSSyncService.exe");
-            }
+            var serviceExe = Environment.ProcessPath
+                ?? Path.Combine(AppContext.BaseDirectory, "HRMSAgent.exe");
 
             if (!File.Exists(serviceExe))
                 throw new FileNotFoundException(
-                    "HRMSSyncService.exe not found next to the manager application.",
+                    "HRMSAgent.exe not found.",
                     serviceExe);
 
             if (!_serviceManager.IsInstalled())
@@ -179,9 +215,9 @@ public partial class SetupWizardViewModel : ObservableObject
         }
         catch (Exception ex)
         {
-            StatusMessage = $"Setup failed: {ex.Message}";
+            StatusMessage = ex.Message;
             MessageBox.Show(
-                StatusMessage,
+                ex.Message,
                 "Setup Error",
                 MessageBoxButton.OK,
                 MessageBoxImage.Error);
@@ -222,7 +258,13 @@ public partial class SetupWizardViewModel : ObservableObject
             case 2:
                 if (string.IsNullOrWhiteSpace(ApiUrl) || string.IsNullOrWhiteSpace(ApiKey))
                 {
-                    StatusMessage = "API URL and API Key are required.";
+                    StatusMessage = "API sync URL and API Key are required.";
+                    return false;
+                }
+
+                if (!ApiUrlHelper.TryValidateSyncEndpoint(ApiUrl, out var apiError))
+                {
+                    StatusMessage = apiError!;
                     return false;
                 }
                 break;
@@ -240,6 +282,20 @@ public partial class SetupWizardViewModel : ObservableObject
                     return false;
                 }
                 break;
+        }
+
+        return true;
+    }
+
+    private bool ValidateAllSteps()
+    {
+        for (var step = 1; step <= 4; step++)
+        {
+            var previousStep = CurrentStep;
+            CurrentStep = step;
+            if (!ValidateCurrentStep())
+                return false;
+            CurrentStep = previousStep;
         }
 
         return true;

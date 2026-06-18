@@ -41,13 +41,11 @@ public class SqlInstanceDetector : ISqlInstanceDetector
                 if (string.IsNullOrWhiteSpace(instanceName))
                     continue;
 
-                var server = instanceName.Equals("MSSQLSERVER", StringComparison.OrdinalIgnoreCase)
-                    ? Environment.MachineName
-                    : $"{Environment.MachineName}\\{instanceName}";
-
-                instances.Add(server);
-                instances.Add($"localhost\\{instanceName}");
-                instances.Add($@".\{instanceName}");
+                // One canonical name per instance (avoid MACHINE\X, localhost\X, .\X duplicates).
+                if (instanceName.Equals("MSSQLSERVER", StringComparison.OrdinalIgnoreCase))
+                    instances.Add("localhost");
+                else
+                    instances.Add($@".\{instanceName}");
             }
         }
         catch

@@ -16,3 +16,6 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Node test dependencies
+test/**/node_modules/

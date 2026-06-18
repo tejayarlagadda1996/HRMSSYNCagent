@@ -1,11 +1,11 @@
 ; HRMS Attendance Sync Agent Installer
-; Build after running scripts\publish.ps1
+; Build: .\scripts\publish.ps1  then  iscc installer\HRMSAgentInstaller.iss
 ; Requires Inno Setup 6.x
 
 #define MyAppName "HRMS Attendance Sync Agent"
 #define MyAppVersion "1.0.0"
 #define MyAppPublisher "Eficens"
-#define MyAppExeName "HRMSSyncManager.exe"
+#define MyAppExeName "HRMSAgent.exe"
 
 [Setup]
 AppId={{8F4E2A1B-9C3D-4E5F-A6B7-C8D9E0F1A2B3}
@@ -29,16 +29,18 @@ UninstallDisplayIcon={app}\{#MyAppExeName}
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Dirs]
-Name: "{commonappdata}\HRMSAgent"
-Name: "{commonappdata}\HRMSAgent\Logs"
+Name: "{commonappdata}\HRMSAgent"; Permissions: users-modify
+Name: "{commonappdata}\HRMSAgent\Logs"; Permissions: users-modify
 
 [Files]
-Source: "..\dist\HRMSAgent\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "..\dist\HRMSAgent\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\package\uninstall-agent.ps1"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\package\OPERATIONS.md"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
 Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
-Name: "{group}\Installation Guide"; Filename: "{app}\INSTALLATION.md"
 Name: "{group}\Open Logs Folder"; Filename: "{commonappdata}\HRMSAgent\Logs"
+Name: "{group}\Uninstall Agent (script)"; Filename: "{app}\uninstall-agent.ps1"
 Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
 
 [Tasks]
@@ -50,6 +52,10 @@ Filename: "{app}\{#MyAppExeName}"; Description: "Launch HRMS Sync Manager"; Flag
 [UninstallRun]
 Filename: "sc.exe"; Parameters: "stop HRMSSyncService"; Flags: runhidden; RunOnceId: "StopService"
 Filename: "sc.exe"; Parameters: "delete HRMSSyncService"; Flags: runhidden; RunOnceId: "DeleteService"
+Filename: "taskkill.exe"; Parameters: "/F /IM HRMSAgent.exe"; Flags: runhidden; RunOnceId: "KillAgent"
+
+[UninstallDelete]
+Type: filesandordirs; Name: "{commonappdata}\HRMSAgent"
 
 [Messages]
-WelcomeLabel2=This will install the HRMS Attendance Sync Agent.%n%nAfter installation, complete the 5-step setup wizard to connect SQL Server and the HRMS API.
+WelcomeLabel2=This will install the HRMS Attendance Sync Agent.%n%nA single application handles both setup and background sync.%n%nAfter installation, complete the 5-step setup wizard to connect SQL Server and the HRMS API. Configuration is stored in %n{commonappdata}\HRMSAgent\config.json.

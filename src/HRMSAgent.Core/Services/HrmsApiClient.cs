@@ -1,6 +1,7 @@
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
+using HRMSAgent.Core.Configuration;
 using Microsoft.Extensions.Logging;
 using HRMSAgent.Core.Models;
 
@@ -128,7 +129,7 @@ public class HrmsApiClient : IHrmsApiClient, IDisposable
     }
 
     private static string BuildSyncUrl(AgentConfiguration config) =>
-        $"{config.ApiUrl.TrimEnd('/')}/api/attendance/sync";
+        ApiUrlHelper.ResolveSyncEndpoint(config.ApiUrl);
 
     public void Dispose() => _httpClient.Dispose();
 }

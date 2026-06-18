@@ -45,7 +45,7 @@ public class AgentConfigurationStore : IAgentConfigurationStore
         {
             CompanyName = configuration.CompanyName,
             CompanyCode = configuration.CompanyCode,
-            ApiUrl = configuration.ApiUrl.TrimEnd('/'),
+            ApiUrl = ApiUrlHelper.ResolveSyncEndpoint(configuration.ApiUrl),
             ApiKey = configuration.ApiKey,
             SqlServer = configuration.SqlServer,
             Database = configuration.Database,

@@ -13,7 +13,7 @@ Before starting, collect:
 |------|---------|
 | Company Name | Eficens Technologies |
 | Company Code | EFICENS |
-| HRMS API URL | `https://api.myhrms.com` |
+| HRMS API Sync URL | `https://api.myhrms.com/api/attendance/sync` |
 | API Key | Provided by HRMS admin |
 | SQL Server instance | `localhost\ESSL` |
 | Database name | `etimetracklite1` |
@@ -89,7 +89,7 @@ When **HRMSSyncManager** opens for the first time, a 5-step wizard appears.
 
 ### Step 2 — Cloud API
 
-- Enter **API URL** (e.g. `https://api.myhrms.com`)
+- Enter **API Sync URL** — full URL including endpoint (e.g. `https://api.myhrms.com/api/attendance/sync`)
 - Enter **API Key**
 - Click **Test API Connection** — should show success
 - Click **Next**

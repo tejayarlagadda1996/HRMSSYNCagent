@@ -62,8 +62,12 @@
                         </Style>
                     </StackPanel.Style>
                     <TextBlock Text="Cloud API" FontSize="18" FontWeight="SemiBold" Margin="0,0,0,16"/>
-                    <TextBlock Text="API URL" Style="{StaticResource FieldLabel}"/>
+                    <TextBlock Text="API Sync URL (full endpoint)" Style="{StaticResource FieldLabel}"/>
                     <TextBox Text="{Binding ApiUrl, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource FieldTextBox}"/>
+                    <TextBlock Text="Example: https://api.myhrms.com/api/attendance/sync"
+                               Foreground="{StaticResource MutedTextBrush}"
+                               FontSize="12"
+                               Margin="0,-8,0,12"/>
                     <TextBlock Text="API Key" Style="{StaticResource FieldLabel}"/>
                     <TextBox Text="{Binding ApiKey, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource FieldTextBox}"/>
                     <Button Content="Test API Connection"
@@ -141,7 +145,7 @@
                     </StackPanel.Style>
                     <TextBlock Text="Ready to Install" FontSize="18" FontWeight="SemiBold" Margin="0,0,0,16"/>
                     <TextBlock TextWrapping="Wrap" Foreground="{StaticResource MutedTextBrush}" Margin="0,0,0,8"
-                               Text="The setup wizard will save your configuration, install the HRMSSyncService Windows service, and start syncing attendance data automatically."/>
+                               Text="The setup wizard will save your configuration, register HRMSAgent as a Windows service, and start syncing attendance data automatically."/>
                     <TextBlock TextWrapping="Wrap" Margin="0,8,0,0">
                         <Run Text="Company: " FontWeight="SemiBold"/>
                         <Run Text="{Binding CompanyName, Mode=OneWay}"/>

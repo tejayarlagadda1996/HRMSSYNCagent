@@ -1,3 +1,7 @@
+using System.Runtime.Versioning;
+using System.Security.AccessControl;
+using System.Security.Principal;
+
 namespace HRMSAgent.Core.Constants;
 
 public static class AgentPaths
@@ -11,7 +15,33 @@ public static class AgentPaths
 
     public static void EnsureDirectoriesExist()
     {
-        Directory.CreateDirectory(DataRoot);
-        Directory.CreateDirectory(LogsDirectory);
+        EnsureWritableDirectory(DataRoot);
+        EnsureWritableDirectory(LogsDirectory);
+    }
+
+    [SupportedOSPlatform("windows")]
+    private static void EnsureWritableDirectory(string path)
+    {
+        Directory.CreateDirectory(path);
+
+        try
+        {
+            var directory = new DirectoryInfo(path);
+            var security = directory.GetAccessControl();
+            var users = new SecurityIdentifier(WellKnownSidType.BuiltinUsersSid, null);
+            var rule = new FileSystemAccessRule(
+                users,
+                FileSystemRights.Modify | FileSystemRights.ReadAndExecute | FileSystemRights.ListDirectory,
+                InheritanceFlags.ContainerInherit | InheritanceFlags.ObjectInherit,
+                PropagationFlags.None,
+                AccessControlType.Allow);
+
+            security.ModifyAccessRule(AccessControlModification.Add, rule, out _);
+            directory.SetAccessControl(security);
+        }
+        catch
+        {
+            // Best-effort; installer may already have set permissions.
+        }
     }
 }

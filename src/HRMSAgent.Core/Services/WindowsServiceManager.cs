@@ -55,11 +55,27 @@ public class WindowsServiceManager : IWindowsServiceManager
 
     public async Task StartAsync()
     {
+        if (!IsInstalled())
+            throw new InvalidOperationException(
+                "Background sync service is not installed. Click \"Install Service\" on the dashboard.");
+
+        if (!WindowsAdminHelper.IsRunningAsAdministrator())
+            throw new InvalidOperationException(WindowsAdminHelper.AdminRequiredMessage);
+
+        if (GetStatus() == "Running")
+            return;
+
         await RunScAsync($"start {ServiceName}");
     }
 
     public async Task StopAsync()
     {
+        if (!WindowsAdminHelper.IsRunningAsAdministrator())
+            throw new InvalidOperationException(WindowsAdminHelper.AdminRequiredMessage);
+
+        if (!IsInstalled() || GetStatus() == "Stopped")
+            return;
+
         await RunScAsync($"stop {ServiceName}");
     }
 
@@ -73,8 +89,12 @@ public class WindowsServiceManager : IWindowsServiceManager
 
     public async Task InstallAsync(string serviceExecutablePath)
     {
-        var binPath = $"\"{serviceExecutablePath}\"";
-        await RunScAsync($"create {ServiceName} binPath= {binPath} start= auto DisplayName= \"HRMS Attendance Sync Service\"");
+        if (!WindowsAdminHelper.IsRunningAsAdministrator())
+            throw new InvalidOperationException(WindowsAdminHelper.AdminRequiredMessage);
+
+        var binPath = FormatServiceBinPath(serviceExecutablePath);
+        await RunScAsync(
+            $"create {ServiceName} binPath= \"{binPath}\" start= auto DisplayName= \"HRMS Attendance Sync Service\"");
 
         try
         {
@@ -89,10 +109,16 @@ public class WindowsServiceManager : IWindowsServiceManager
 
     public async Task UninstallAsync()
     {
-        if (GetStatus() == "Running")
-            await StopAsync();
+        if (IsInstalled())
+        {
+            if (GetStatus() == "Running")
+                await StopAsync();
 
-        await RunScAsync($"delete {ServiceName}");
+            await RunScAsync($"delete {ServiceName}");
+        }
+
+        await Task.Delay(1500);
+        AgentProcessTerminator.KillAll(excludeCurrentProcess: true);
     }
 
     public ServiceHealthStatus GetHealthOverview(AgentConfiguration? config)
@@ -152,8 +178,33 @@ public class WindowsServiceManager : IWindowsServiceManager
         {
             var error = await process.StandardError.ReadToEndAsync();
             var output = await process.StandardOutput.ReadToEndAsync();
+            var details = $"{error} {output}".Trim();
+
+            if (process.ExitCode == 1060 || details.Contains("does not exist as an installed service", StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException(
+                    "Background sync service is not installed. Click \"Install Service\" on the dashboard.");
+
+            if (process.ExitCode == 1056 || details.Contains("already running", StringComparison.OrdinalIgnoreCase))
+                return;
+
+            if (process.ExitCode == 1062 || details.Contains("has not been started", StringComparison.OrdinalIgnoreCase))
+                return;
+
+            if (process.ExitCode == 1073 || details.Contains("already exists", StringComparison.OrdinalIgnoreCase))
+                return;
+
+            if (process.ExitCode == 5 || details.Contains("Access is denied", StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException(WindowsAdminHelper.AdminRequiredMessage);
+
             throw new InvalidOperationException(
-                $"sc.exe {arguments} failed ({process.ExitCode}): {error} {output}".Trim());
+                $"Service command failed ({process.ExitCode}): {details}");
         }
+    }
+
+    private static string FormatServiceBinPath(string serviceExecutablePath)
+    {
+        return serviceExecutablePath.Contains(' ')
+            ? $"\\\"{serviceExecutablePath}\\\" --service"
+            : $"{serviceExecutablePath} --service";
     }
 }

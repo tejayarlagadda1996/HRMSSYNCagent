@@ -5,12 +5,17 @@
              xmlns:models="clr-namespace:HRMSAgent.Core.Models;assembly=HRMSAgent.Core">
     <UserControl.Resources>
         <converters:HealthToBrushConverter x:Key="HealthToBrush"/>
+        <converters:HealthLevelToTextConverter x:Key="HealthLevelToText"/>
+        <converters:StatusMessageToBrushConverter x:Key="StatusMessageToBrush"/>
+        <converters:BoolToVisibilityConverter x:Key="BoolToVisibility"/>
+        <converters:InverseBoolToVisibilityConverter x:Key="InverseBoolToVisibility"/>
         <converters:InverseBoolConverter x:Key="InverseBool"/>
     </UserControl.Resources>
 
     <ScrollViewer VerticalScrollBarVisibility="Auto">
         <Grid>
             <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
@@ -27,8 +32,24 @@
                            Margin="0,4,0,0"/>
             </StackPanel>
 
+            <Border Grid.Row="1"
+                    Background="#FEF3C7"
+                    BorderBrush="#F59E0B"
+                    BorderThickness="1"
+                    CornerRadius="8"
+                    Padding="12"
+                    Margin="0,0,0,12"
+                    Visibility="{Binding IsServiceNotInstalled, Converter={StaticResource BoolToVisibility}}">
+                <TextBlock TextWrapping="Wrap" Foreground="#92400E">
+                    <Run FontWeight="SemiBold">Service not installed.</Run>
+                    <Run> Your settings are saved. Click </Run>
+                    <Run FontWeight="SemiBold">Install Service</Run>
+                    <Run> below to enable background sync. (Administrator required — you already have this if you used Run as administrator.)</Run>
+                </TextBlock>
+            </Border>
+
             <!-- Status Cards -->
-            <UniformGrid Grid.Row="1" Columns="3" Margin="0,0,0,16">
+            <UniformGrid Grid.Row="2" Columns="3" Margin="0,0,0,16">
                 <Border Style="{StaticResource CardBorder}" Margin="0,0,8,12">
                     <StackPanel>
                         <TextBlock Text="Service Status" Style="{StaticResource FieldLabel}"/>
@@ -46,7 +67,7 @@
                         <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
                             <Ellipse Width="12" Height="12" Margin="0,4,8,0"
                                      Fill="{Binding ApiHealth, Converter={StaticResource HealthToBrush}}"/>
-                            <TextBlock Text="{Binding ApiHealth}" FontSize="18" FontWeight="SemiBold"/>
+                            <TextBlock Text="{Binding ApiHealth, Converter={StaticResource HealthLevelToText}}" FontSize="18" FontWeight="SemiBold"/>
                         </StackPanel>
                     </StackPanel>
                 </Border>
@@ -57,13 +78,13 @@
                         <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
                             <Ellipse Width="12" Height="12" Margin="0,4,8,0"
                                      Fill="{Binding SqlHealth, Converter={StaticResource HealthToBrush}}"/>
-                            <TextBlock Text="{Binding SqlHealth}" FontSize="18" FontWeight="SemiBold"/>
+                            <TextBlock Text="{Binding SqlHealth, Converter={StaticResource HealthLevelToText}}" FontSize="18" FontWeight="SemiBold"/>
                         </StackPanel>
                     </StackPanel>
                 </Border>
             </UniformGrid>
 
-            <Border Grid.Row="2" Style="{StaticResource CardBorder}">
+            <Border Grid.Row="3" Style="{StaticResource CardBorder}">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
@@ -83,9 +104,26 @@
                     <StackPanel Grid.Column="1">
                         <TextBlock Text="Service Controls" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,12"/>
                         <WrapPanel>
-                            <Button Content="Start Service" Command="{Binding StartServiceCommand}" Style="{StaticResource PrimaryButton}" Margin="0,0,8,8"/>
-                            <Button Content="Stop Service" Command="{Binding StopServiceCommand}" Style="{StaticResource SecondaryButton}" Margin="0,0,8,8"/>
-                            <Button Content="Restart Service" Command="{Binding RestartServiceCommand}" Style="{StaticResource SecondaryButton}" Margin="0,0,8,8"/>
+                            <Button Content="Install Service"
+                                    Command="{Binding InstallServiceCommand}"
+                                    Style="{StaticResource PrimaryButton}"
+                                    Margin="0,0,8,8"
+                                    Visibility="{Binding IsServiceNotInstalled, Converter={StaticResource BoolToVisibility}}"/>
+                            <Button Content="Start Service"
+                                    Command="{Binding StartServiceCommand}"
+                                    Style="{StaticResource PrimaryButton}"
+                                    Margin="0,0,8,8"
+                                    Visibility="{Binding ShowStartService, Converter={StaticResource BoolToVisibility}}"/>
+                            <Button Content="Pause Service"
+                                    Command="{Binding PauseServiceCommand}"
+                                    Style="{StaticResource SecondaryButton}"
+                                    Margin="0,0,8,8"
+                                    Visibility="{Binding ShowPauseService, Converter={StaticResource BoolToVisibility}}"/>
+                            <Button Content="Restart Service"
+                                    Command="{Binding RestartServiceCommand}"
+                                    Style="{StaticResource SecondaryButton}"
+                                    Margin="0,0,8,8"
+                                    Visibility="{Binding ShowRestartService, Converter={StaticResource BoolToVisibility}}"/>
                             <Button Content="Open Logs Folder" Command="{Binding OpenLogsFolderCommand}" Style="{StaticResource SecondaryButton}" Margin="0,0,8,8"/>
                             <Button Content="Refresh Status" Command="{Binding RefreshStatusCommand}" Style="{StaticResource SecondaryButton}" Margin="0,0,8,8"/>
                         </WrapPanel>
@@ -93,7 +131,7 @@
                 </Grid>
             </Border>
 
-            <Border Grid.Row="3" Style="{StaticResource CardBorder}">
+            <Border Grid.Row="4" Style="{StaticResource CardBorder}" Margin="0,12,0,0">
                 <StackPanel>
                     <TextBlock Text="Configuration" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,12"/>
                     <Grid>
@@ -107,7 +145,7 @@
                             <TextBox Text="{Binding CompanyName, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource FieldTextBox}"/>
                             <TextBlock Text="Company Code" Style="{StaticResource FieldLabel}"/>
                             <TextBox Text="{Binding CompanyCode, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource FieldTextBox}"/>
-                            <TextBlock Text="API URL" Style="{StaticResource FieldLabel}"/>
+                            <TextBlock Text="API Sync URL (full endpoint)" Style="{StaticResource FieldLabel}"/>
                             <TextBox Text="{Binding ApiUrl, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource FieldTextBox}"/>
                             <TextBlock Text="API Key" Style="{StaticResource FieldLabel}"/>
                             <TextBox Text="{Binding ApiKey, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource FieldTextBox}"/>
@@ -136,7 +174,7 @@
                     </WrapPanel>
 
                     <TextBlock Margin="0,12,0,0"
-                               Foreground="{StaticResource MutedTextBrush}"
+                               Foreground="{Binding StatusMessage, Converter={StaticResource StatusMessageToBrush}}"
                                Text="{Binding StatusMessage}"
                                TextWrapping="Wrap"/>
                 </StackPanel>

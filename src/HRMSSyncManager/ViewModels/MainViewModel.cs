@@ -25,6 +25,9 @@ public partial class MainViewModel : ObservableObject
     public void RefreshView()
     {
         var exists = _configStore.Exists();
+        if (exists)
+            Dashboard?.ReloadFromStore();
+
         ShowSetupWizard = !exists;
         ShowDashboard = exists;
     }
