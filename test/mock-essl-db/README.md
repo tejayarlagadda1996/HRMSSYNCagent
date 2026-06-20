@@ -16,8 +16,10 @@ Dummy SQL Server database that mimics **eSSL eTimeTrackLite** attendance tables 
 This creates:
 
 - Database: `etimetracklite1`
-- Table: `DeviceLogs_6_2026` (current month format used by eSSL)
-- 5 sample attendance records
+- Table: `DeviceLogs_6_2026` (production-aligned eSSL schema)
+- 5 sample attendance records (`UserId` `00011`/`00012`, `DeviceId` 19/21)
+
+**Note:** `setup.sql` drops and recreates `DeviceLogs_6_2026` so the schema matches production.
 
 ## Agent wizard settings
 
