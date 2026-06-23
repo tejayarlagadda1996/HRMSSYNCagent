@@ -1,7 +1,11 @@
 <UserControl x:Class="HRMSSyncManager.Views.SetupWizardView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:converters="clr-namespace:HRMSSyncManager.Converters">
+             xmlns:converters="clr-namespace:HRMSSyncManager.Converters"
+             HorizontalAlignment="Stretch"
+             VerticalAlignment="Stretch"
+             HorizontalContentAlignment="Stretch"
+             VerticalContentAlignment="Stretch">
     <UserControl.Resources>
         <converters:InverseBoolConverter x:Key="InverseBool"/>
     </UserControl.Resources>

@@ -2,7 +2,10 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:converters="clr-namespace:HRMSSyncManager.Converters"
-             xmlns:models="clr-namespace:HRMSAgent.Core.Models;assembly=HRMSAgent.Core">
+             HorizontalAlignment="Stretch"
+             VerticalAlignment="Stretch"
+             HorizontalContentAlignment="Stretch"
+             VerticalContentAlignment="Stretch">
     <UserControl.Resources>
         <converters:HealthToBrushConverter x:Key="HealthToBrush"/>
         <converters:HealthLevelToTextConverter x:Key="HealthLevelToText"/>
@@ -12,128 +15,148 @@
         <converters:InverseBoolConverter x:Key="InverseBool"/>
     </UserControl.Resources>
 
-    <ScrollViewer VerticalScrollBarVisibility="Auto">
-        <Grid>
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-            </Grid.RowDefinitions>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
 
-            <StackPanel Grid.Row="0" Margin="0,0,0,20">
-                <TextBlock Text="HRMS Attendance Sync Manager"
-                           FontSize="28"
-                           FontWeight="Bold"
-                           Foreground="{StaticResource TextBrush}"/>
-                <TextBlock Text="Monitor and configure the attendance sync agent"
-                           Foreground="{StaticResource MutedTextBrush}"
-                           Margin="0,4,0,0"/>
-            </StackPanel>
+        <StackPanel Grid.Row="0" Margin="0,0,0,16">
+            <TextBlock Text="HRMS Attendance Sync Manager"
+                       FontSize="28"
+                       FontWeight="Bold"
+                       Foreground="{StaticResource TextBrush}"/>
+            <TextBlock Text="Monitor and configure the attendance sync agent"
+                       Foreground="{StaticResource MutedTextBrush}"
+                       Margin="0,4,0,0"/>
+        </StackPanel>
 
-            <Border Grid.Row="1"
-                    Background="#FEF3C7"
-                    BorderBrush="#F59E0B"
-                    BorderThickness="1"
-                    CornerRadius="8"
-                    Padding="12"
-                    Margin="0,0,0,12"
-                    Visibility="{Binding IsServiceNotInstalled, Converter={StaticResource BoolToVisibility}}">
-                <TextBlock TextWrapping="Wrap" Foreground="#92400E">
-                    <Run FontWeight="SemiBold">Service not installed.</Run>
-                    <Run> Your settings are saved. Click </Run>
-                    <Run FontWeight="SemiBold">Install Service</Run>
-                    <Run> below to enable background sync. (Administrator required — you already have this if you used Run as administrator.)</Run>
-                </TextBlock>
-            </Border>
+        <Border Grid.Row="1"
+                Background="#FEF3C7"
+                BorderBrush="#F59E0B"
+                BorderThickness="1"
+                CornerRadius="8"
+                Padding="12"
+                Margin="0,0,0,12"
+                Visibility="{Binding IsServiceNotInstalled, Converter={StaticResource BoolToVisibility}}">
+            <TextBlock TextWrapping="Wrap" Foreground="#92400E">
+                <Run FontWeight="SemiBold">Service not installed.</Run>
+                <Run> Your settings are saved. Click </Run>
+                <Run FontWeight="SemiBold">Install Service</Run>
+                <Run> below to enable background sync. (Administrator required — you already have this if you used Run as administrator.)</Run>
+            </TextBlock>
+        </Border>
 
-            <!-- Status Cards -->
-            <UniformGrid Grid.Row="2" Columns="3" Margin="0,0,0,16">
-                <Border Style="{StaticResource CardBorder}" Margin="0,0,8,12">
-                    <StackPanel>
-                        <TextBlock Text="Service Status" Style="{StaticResource FieldLabel}"/>
-                        <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
-                            <Ellipse Width="12" Height="12" Margin="0,4,8,0"
-                                     Fill="{Binding ServiceHealth, Converter={StaticResource HealthToBrush}}"/>
-                            <TextBlock Text="{Binding ServiceStatus}" FontSize="18" FontWeight="SemiBold"/>
-                        </StackPanel>
-                    </StackPanel>
-                </Border>
+        <!-- Status Cards -->
+        <Grid Grid.Row="2" Margin="0,0,0,12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
 
-                <Border Style="{StaticResource CardBorder}" Margin="4,0,4,12">
-                    <StackPanel>
-                        <TextBlock Text="API Status" Style="{StaticResource FieldLabel}"/>
-                        <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
-                            <Ellipse Width="12" Height="12" Margin="0,4,8,0"
-                                     Fill="{Binding ApiHealth, Converter={StaticResource HealthToBrush}}"/>
-                            <TextBlock Text="{Binding ApiHealth, Converter={StaticResource HealthLevelToText}}" FontSize="18" FontWeight="SemiBold"/>
-                        </StackPanel>
-                    </StackPanel>
-                </Border>
-
-                <Border Style="{StaticResource CardBorder}" Margin="8,0,0,12">
-                    <StackPanel>
-                        <TextBlock Text="SQL Status" Style="{StaticResource FieldLabel}"/>
-                        <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
-                            <Ellipse Width="12" Height="12" Margin="0,4,8,0"
-                                     Fill="{Binding SqlHealth, Converter={StaticResource HealthToBrush}}"/>
-                            <TextBlock Text="{Binding SqlHealth, Converter={StaticResource HealthLevelToText}}" FontSize="18" FontWeight="SemiBold"/>
-                        </StackPanel>
-                    </StackPanel>
-                </Border>
-            </UniformGrid>
-
-            <Border Grid.Row="3" Style="{StaticResource CardBorder}">
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="*"/>
-                    </Grid.ColumnDefinitions>
-
-                    <StackPanel Grid.Column="0" Margin="0,0,12,0">
-                        <TextBlock Text="Sync Overview" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,12"/>
-                        <TextBlock><Run Text="Last Sync: " FontWeight="SemiBold"/><Run Text="{Binding LastSyncTime, Mode=OneWay}"/></TextBlock>
-                        <TextBlock Margin="0,4,0,0"><Run Text="Last Successful Sync: " FontWeight="SemiBold"/><Run Text="{Binding LastSuccessfulSync, Mode=OneWay}"/></TextBlock>
-                        <TextBlock Margin="0,4,0,0"><Run Text="Pending Records: " FontWeight="SemiBold"/><Run Text="{Binding PendingRecordsCount, Mode=OneWay}"/></TextBlock>
-                        <TextBlock Margin="0,4,0,0"><Run Text="Sync Interval: " FontWeight="SemiBold"/><Run Text="{Binding SyncIntervalSeconds, Mode=OneWay}"/><Run Text=" seconds"/></TextBlock>
-                        <TextBlock Margin="0,4,0,0"><Run Text="SQL Instance: " FontWeight="SemiBold"/><Run Text="{Binding SqlServer, Mode=OneWay}"/></TextBlock>
-                        <TextBlock Margin="0,4,0,0"><Run Text="Database: " FontWeight="SemiBold"/><Run Text="{Binding Database, Mode=OneWay}"/></TextBlock>
-                    </StackPanel>
-
-                    <StackPanel Grid.Column="1">
-                        <TextBlock Text="Service Controls" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,12"/>
-                        <WrapPanel>
-                            <Button Content="Install Service"
-                                    Command="{Binding InstallServiceCommand}"
-                                    Style="{StaticResource PrimaryButton}"
-                                    Margin="0,0,8,8"
-                                    Visibility="{Binding IsServiceNotInstalled, Converter={StaticResource BoolToVisibility}}"/>
-                            <Button Content="Start Service"
-                                    Command="{Binding StartServiceCommand}"
-                                    Style="{StaticResource PrimaryButton}"
-                                    Margin="0,0,8,8"
-                                    Visibility="{Binding ShowStartService, Converter={StaticResource BoolToVisibility}}"/>
-                            <Button Content="Pause Service"
-                                    Command="{Binding PauseServiceCommand}"
-                                    Style="{StaticResource SecondaryButton}"
-                                    Margin="0,0,8,8"
-                                    Visibility="{Binding ShowPauseService, Converter={StaticResource BoolToVisibility}}"/>
-                            <Button Content="Restart Service"
-                                    Command="{Binding RestartServiceCommand}"
-                                    Style="{StaticResource SecondaryButton}"
-                                    Margin="0,0,8,8"
-                                    Visibility="{Binding ShowRestartService, Converter={StaticResource BoolToVisibility}}"/>
-                            <Button Content="Open Logs Folder" Command="{Binding OpenLogsFolderCommand}" Style="{StaticResource SecondaryButton}" Margin="0,0,8,8"/>
-                            <Button Content="Refresh Status" Command="{Binding RefreshStatusCommand}" Style="{StaticResource SecondaryButton}" Margin="0,0,8,8"/>
-                        </WrapPanel>
-                    </StackPanel>
-                </Grid>
-            </Border>
-
-            <Border Grid.Row="4" Style="{StaticResource CardBorder}" Margin="0,12,0,0">
+            <Border Grid.Column="0" Style="{StaticResource CardBorder}" Margin="0,0,8,0">
                 <StackPanel>
-                    <TextBlock Text="Configuration" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,12"/>
+                    <TextBlock Text="Service Status" Style="{StaticResource FieldLabel}"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                        <Ellipse Width="12" Height="12" Margin="0,4,8,0"
+                                 Fill="{Binding ServiceHealth, Converter={StaticResource HealthToBrush}}"/>
+                        <TextBlock Text="{Binding ServiceStatus}" FontSize="18" FontWeight="SemiBold"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <Border Grid.Column="1" Style="{StaticResource CardBorder}" Margin="4,0">
+                <StackPanel>
+                    <TextBlock Text="API Status" Style="{StaticResource FieldLabel}"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                        <Ellipse Width="12" Height="12" Margin="0,4,8,0"
+                                 Fill="{Binding ApiHealth, Converter={StaticResource HealthToBrush}}"/>
+                        <TextBlock Text="{Binding ApiHealth, Converter={StaticResource HealthLevelToText}}" FontSize="18" FontWeight="SemiBold"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <Border Grid.Column="2" Style="{StaticResource CardBorder}" Margin="8,0,0,0">
+                <StackPanel>
+                    <TextBlock Text="SQL Status" Style="{StaticResource FieldLabel}"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                        <Ellipse Width="12" Height="12" Margin="0,4,8,0"
+                                 Fill="{Binding SqlHealth, Converter={StaticResource HealthToBrush}}"/>
+                        <TextBlock Text="{Binding SqlHealth, Converter={StaticResource HealthLevelToText}}" FontSize="18" FontWeight="SemiBold"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <Border Grid.Row="3" Style="{StaticResource CardBorder}" Margin="0,0,0,12">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0" Margin="0,0,12,0">
+                    <TextBlock Text="Sync Overview" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,12"/>
+                    <TextBlock><Run Text="Last Sync: " FontWeight="SemiBold"/><Run Text="{Binding LastSyncTime, Mode=OneWay}"/></TextBlock>
+                    <TextBlock Margin="0,4,0,0"><Run Text="Last Successful Sync: " FontWeight="SemiBold"/><Run Text="{Binding LastSuccessfulSync, Mode=OneWay}"/></TextBlock>
+                    <TextBlock Margin="0,4,0,0"><Run Text="Pending Records: " FontWeight="SemiBold"/><Run Text="{Binding PendingRecordsCount, Mode=OneWay}"/></TextBlock>
+                    <TextBlock Margin="0,4,0,0"><Run Text="Sync Interval: " FontWeight="SemiBold"/><Run Text="{Binding SyncIntervalSeconds, Mode=OneWay}"/><Run Text=" seconds"/></TextBlock>
+                    <TextBlock Margin="0,4,0,0"><Run Text="SQL Instance: " FontWeight="SemiBold"/><Run Text="{Binding SqlServer, Mode=OneWay}"/></TextBlock>
+                    <TextBlock Margin="0,4,0,0"><Run Text="Database: " FontWeight="SemiBold"/><Run Text="{Binding Database, Mode=OneWay}"/></TextBlock>
+                </StackPanel>
+
+                <StackPanel Grid.Column="1">
+                    <TextBlock Text="Service Controls" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,12"/>
+                    <WrapPanel>
+                        <Button Content="Install Service"
+                                Command="{Binding InstallServiceCommand}"
+                                Style="{StaticResource PrimaryButton}"
+                                Margin="0,0,8,8"
+                                Visibility="{Binding IsServiceNotInstalled, Converter={StaticResource BoolToVisibility}}"/>
+                        <Button Content="Start Service"
+                                Command="{Binding StartServiceCommand}"
+                                Style="{StaticResource PrimaryButton}"
+                                Margin="0,0,8,8"
+                                Visibility="{Binding ShowStartService, Converter={StaticResource BoolToVisibility}}"/>
+                        <Button Content="Pause Service"
+                                Command="{Binding PauseServiceCommand}"
+                                Style="{StaticResource SecondaryButton}"
+                                Margin="0,0,8,8"
+                                Visibility="{Binding ShowPauseService, Converter={StaticResource BoolToVisibility}}"/>
+                        <Button Content="Restart Service"
+                                Command="{Binding RestartServiceCommand}"
+                                Style="{StaticResource SecondaryButton}"
+                                Margin="0,0,8,8"
+                                Visibility="{Binding ShowRestartService, Converter={StaticResource BoolToVisibility}}"/>
+                        <Button Content="Open Logs Folder" Command="{Binding OpenLogsFolderCommand}" Style="{StaticResource SecondaryButton}" Margin="0,0,8,8"/>
+                        <Button Content="Refresh Status" Command="{Binding RefreshStatusCommand}" Style="{StaticResource SecondaryButton}" Margin="0,0,8,8"/>
+                    </WrapPanel>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <Border Grid.Row="4" Style="{StaticResource CardBorder}">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <TextBlock Grid.Row="0"
+                           Text="Configuration"
+                           FontSize="16"
+                           FontWeight="SemiBold"
+                           Margin="0,0,0,12"/>
+
+                <ScrollViewer Grid.Row="1"
+                              VerticalScrollBarVisibility="Auto"
+                              HorizontalScrollBarVisibility="Disabled">
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
@@ -166,19 +189,20 @@
                             <TextBox Text="{Binding BatchSize, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource FieldTextBox}"/>
                         </StackPanel>
                     </Grid>
+                </ScrollViewer>
 
-                    <WrapPanel Margin="0,8,0,0">
-                        <Button Content="Save Configuration" Command="{Binding SaveConfigurationCommand}" Style="{StaticResource PrimaryButton}" Margin="0,0,8,0"/>
-                        <Button Content="Test SQL Connection" Command="{Binding TestSqlConnectionCommand}" Style="{StaticResource SecondaryButton}" Margin="0,0,8,0"/>
-                        <Button Content="Test API Connection" Command="{Binding TestApiConnectionCommand}" Style="{StaticResource SecondaryButton}"/>
-                    </WrapPanel>
+                <WrapPanel Grid.Row="2" Margin="0,12,0,0">
+                    <Button Content="Save Configuration" Command="{Binding SaveConfigurationCommand}" Style="{StaticResource PrimaryButton}" Margin="0,0,8,0"/>
+                    <Button Content="Test SQL Connection" Command="{Binding TestSqlConnectionCommand}" Style="{StaticResource SecondaryButton}" Margin="0,0,8,0"/>
+                    <Button Content="Test API Connection" Command="{Binding TestApiConnectionCommand}" Style="{StaticResource SecondaryButton}"/>
+                </WrapPanel>
 
-                    <TextBlock Margin="0,12,0,0"
-                               Foreground="{Binding StatusMessage, Converter={StaticResource StatusMessageToBrush}}"
-                               Text="{Binding StatusMessage}"
-                               TextWrapping="Wrap"/>
-                </StackPanel>
-            </Border>
-        </Grid>
-    </ScrollViewer>
+                <TextBlock Grid.Row="3"
+                           Margin="0,12,0,0"
+                           Foreground="{Binding StatusMessage, Converter={StaticResource StatusMessageToBrush}}"
+                           Text="{Binding StatusMessage}"
+                           TextWrapping="Wrap"/>
+            </Grid>
+        </Border>
+    </Grid>
 </UserControl>
